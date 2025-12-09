@@ -1,4 +1,4 @@
-# ns3penv (modified by Orfeas Karachalios)
+# ns3penv
 
 This project is a heavily modified fork/successor to ns3-ai.
 We acknowledge the original authors for their foundational work.
