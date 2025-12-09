@@ -18,14 +18,14 @@ In this manner, the standard Gym library in python can be used to embed the
 ns3 simulation and treat it as a gym environment. In principle, you
 only need to define this class and its interactions with the ns3 simulation in C++,
 while the Python side is simple in that the GymEnv wrapper effectively proxies
-the same `OpenGymEnv`. Defining control of the simulation through the class using 
-Python is the job of the developer. 
+the same `OpenGymEnv`. Defining control of the simulation through the class using
+Python is the job of the developer.
 
 ### High-Level Description
 
 A high-level description of the underlying communication follows:
 
-- a shared memory space using the boost library is created and utilized to exchange messages. 
+- a shared memory space using the boost library is created and utilized to exchange messages.
 - __WARNING__: This exists externally to the c++ or python process, and can be seen by any
 OS process that has a handle to the shared memory. This means it should
 also be cleaned-up properly when ending the simulation, otherwise it will
@@ -35,8 +35,8 @@ memory using a format dictated by the Google Protobuf library declared
 in `ns3penv/proto/messages.proto`. These messages live in the namespace
 `ns3penv`.
 - __NOTE__: protobuf generates a message module that binds on the C++ side, while Python
-python bindings to read and write messages are generated via the pybind11 library. 
-- On C++ in particular, the module `ns3penv-msg-interface.h` defines a singleton that embeds access to the shared memory. 
+python bindings to read and write messages are generated via the pybind11 library.
+- On C++ in particular, the module `ns3penv-msg-interface.h` defines a singleton that embeds access to the shared memory.
 - __WARNING__: the singleton pattern guarantees ownership over the
 shared memory access. However, it causes the following issue on the Python side:
 multiple environments cannot be created in the same python process because
@@ -110,7 +110,7 @@ found in `ns3penv/model/spaces.*`. They are
 - `OpenGymDiscreteSpace` is just a scalar space with levels from $0$ to $n-1$
 - `OpenGymBoxSpace` is a vector of numeric values, where the type of each and the range of values has to be specified
 - `OpenGymTupleSpace` is a tuple of other Spaces
-- `OpenGymDictSpace` is a dictionary with string keys and other Spaces as values 
+- `OpenGymDictSpace` is a dictionary with string keys and other Spaces as values
 
 The two first are base spaces while the last two may nest any type of space.
 
@@ -126,7 +126,7 @@ Actions are yielded back from the python controller to the ns3 simulation
 and configure certain simulation objects. For example, it could dictate
 the slicing allocation on the `NrMacSchedulerNs3` instance, that acts as an upper
 limit to allocating resources to a group of ues. How the action is interpreted
-exaclty occurs in `ExecuteActions` but usually involves configuring some 
+exaclty occurs in `ExecuteActions` but usually involves configuring some
 ns3 network component.
 
 ```cpp
@@ -187,6 +187,7 @@ An example of this method would be
         Simulator::Schedule(&MyEnvironment::ScheduleNextDecision, this, var1_, var2_)
     }
 ```
+
 Notify calls the `GetObservation` and `ExecuteActions` automatically, so the only thing
 the developer should be aware of is the state of environment as expressed in data members
 of the class that can be pointers to objects that update their own state with simulation
@@ -195,3 +196,34 @@ statistics and component configuration or directly methods that are connected to
 4. Clean-up is important, and when the simulation ends on its own, it occurs normally.
 However, if a kill signal is sent to ns3 process early via python, it will not be received by the ns3 process immediately.
 
+5. The python-side gym env wrapper needs to be passed certain settings to run the simulation, for example
+when using `torch-rl`
+
+```python
+   import gymansium
+   from torchrl.envs import GymEnv, set_gym_backend
+
+   def create_env_func(format_arguments: str, env_id: int)
+       import ns3env
+       "msg_interface_settings": {
+          "segName": f"seg{env_id}",
+          "cpp2pyMsgName": f"cpp2py{env_id}",
+          "py2cppMsgName": f"py2cpp{env_id}",
+          "lockableName": f"lockable{env_id}",
+          "handleFinish": False,
+        }  
+        with set_gym_backend(gymnasium):
+          env = GymEnv(
+              "ns3env-v0",
+              targetName=f'--no-build "run-marl-environment {format_arguments}"',
+              ns3Path="/home/ns3/ns-3-dev",
+              shmSize=131072,
+              msg_interface_settings=msg_interface_settings,
+              auto_reset=False,
+              device=device,
+            )
+```
+
+Note that the ns3penv interface needs a unique id per ns3 simulation to register a new shared memory segment.
+In addition, `format_arguments` that are input to the simulation as `cmdArgs` need to be specified in the proper format
+`--option=value`.
