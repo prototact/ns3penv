@@ -1,0 +1,19 @@
+[build-system]
+requires = ["uv_build>=0.9.2, <10.0.0"]
+build-backend = "uv_build"
+
+[project]
+name = "ns3env"
+version = "0.2.0"
+authors = [{ name = "Orfeas Karachalios", email = "prototact@pm.me" }]
+description = "A ns-3 Gym-compatible environment for Python"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: Linux",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+]
